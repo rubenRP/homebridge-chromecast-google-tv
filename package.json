@@ -1,5 +1,4 @@
 {
-  "private": true,
   "displayName": "Homebridge Chromecast with Google TV",
   "name": "homebridge-chromecast-google-tv",
   "version": "1.0.4-beta.0",

@@ -1,7 +1,7 @@
-import { API } from "homebridge";
+import { API } from 'homebridge';
 
-import { PLATFORM_NAME } from "./settings";
-import { ChromecastGoogleTVPlatform } from "./platform";
+import { PLATFORM_NAME } from './settings';
+import { ChromecastGoogleTVPlatform } from './platform';
 
 /**
  * This method registers the platform with Homebridge

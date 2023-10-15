@@ -6,13 +6,13 @@ import {
   PlatformConfig,
   Service,
   Characteristic,
-} from "homebridge";
+} from 'homebridge';
 
-import mdns from "mdns";
-import { mdnsSequence } from "./helpers";
+import mdns from 'mdns';
+import { mdnsSequence } from './helpers';
 
-import { PLATFORM_NAME, PLUGIN_NAME } from "./settings";
-import { ChromecastGoogleTVPlatformAccessory } from "./platformAccessory";
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
+import { ChromecastGoogleTVPlatformAccessory } from './platformAccessory';
 
 /**
  * HomebridgePlatform
@@ -26,16 +26,16 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
-  public castScanner: any;
+  public castScanner: mdns.Browser;
 
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
-    public readonly api: API
+    public readonly api: API,
   ) {
-    this.log.debug("Finished initializing platform:", this.config.name);
+    this.log.debug('Finished initializing platform:', this.config.name);
 
-    this.castScanner = mdns.createBrowser(mdns.tcp("googlecast"), {
+    this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
       resolverSequence: mdnsSequence,
     });
 
@@ -43,21 +43,24 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
     // Dynamic Platform plugins should only register new accessories after this event was fired,
     // in order to ensure they weren't added to homebridge already. This event can also be used
     // to start discovery of new accessories.
-    this.api.on("didFinishLaunching", () => {
-      log.debug("Executed didFinishLaunching callback");
+    this.api.on('didFinishLaunching', () => {
+      log.debug('Executed didFinishLaunching callback');
       // run the method to discover / register your devices as accessories
       this.discoverDevices();
     });
 
-    setTimeout(() => {
-      this.castScanner.stop();
-      this.log.info("scanAccesories() - Restarting Chromecast Scanner");
+    setTimeout(
+      () => {
+        this.castScanner.stop();
+        this.log.info('scanAccesories() - Restarting Chromecast Scanner');
 
-      this.castScanner = mdns.createBrowser(mdns.tcp("googlecast"), {
-        resolverSequence: mdnsSequence,
-      });
-      this.discoverDevices();
-    }, 30 * 60 * 1000);
+        this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
+          resolverSequence: mdnsSequence,
+        });
+        this.discoverDevices();
+      },
+      30 * 60 * 1000,
+    );
   }
 
   /**
@@ -65,7 +68,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
    * It should be used to setup event handlers for characteristics and update respective values.
    */
   configureAccessory(accessory: PlatformAccessory) {
-    this.log.info("Loading accessory from cache:", accessory.displayName);
+    this.log.info('Loading accessory from cache:', accessory.displayName);
 
     // add the restored accessory to the accessories cache so we can track if it has already been registered
     this.accessories.push(accessory);
@@ -77,28 +80,28 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   discoverDevices() {
-    this.log.info("Searching for Chromecast devices...");
+    this.log.info('Searching for Chromecast devices...');
     this.castScanner.start();
 
-    this.castScanner.on("serviceUp", (device: any) => {
+    this.castScanner.on('serviceUp', (device: mdns.Service) => {
       this.log.info(
-        "Found device. Adding if supported: " + device.txtRecord.md
+        'Found device. Adding if supported: ' + device.txtRecord.md,
       );
 
       if (
         device &&
         device.txtRecord &&
-        ["Chromecast", "Chromecast Ultra"].indexOf(device.txtRecord.md) !== -1
+        ['Chromecast', 'Chromecast Ultra'].indexOf(device.txtRecord.md) !== -1
       ) {
         const uuid = this.api.hap.uuid.generate(device.txtRecord.id);
         const existingAccessory = this.accessories.find(
-          (accessory) => accessory.UUID === uuid
+          (accessory) => accessory.UUID === uuid,
         );
 
         if (existingAccessory) {
           this.log.info(
-            "Restoring existing accessory from cache:",
-            existingAccessory.displayName
+            'Restoring existing accessory from cache:',
+            existingAccessory.displayName,
           );
 
           // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
@@ -120,7 +123,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
 
           this.castScanner.stop();
         } else {
-          this.log.info("Adding new accessory:", device.name);
+          this.log.info('Adding new accessory:', device.name);
 
           const accessory = new this.api.platformAccessory(device.name, uuid);
 

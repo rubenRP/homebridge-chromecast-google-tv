@@ -1,8 +1,8 @@
-import mdns from "mdns";
+import mdns from 'mdns';
 
 const mdnsSequence = [
   mdns.rst.DNSServiceResolve(),
-  "DNSServiceGetAddrInfo" in mdns.dns_sd
+  'DNSServiceGetAddrInfo' in mdns.dns_sd
     ? mdns.rst.DNSServiceGetAddrInfo()
     : mdns.rst.getaddrinfo({ families: [0] }),
   mdns.rst.makeAddressesUnique(),
@@ -11,7 +11,7 @@ const mdnsSequence = [
 const getCircularReplacer = () => {
   const seen = new WeakSet();
   return (key, value) => {
-    if (typeof value === "object" && value !== null) {
+    if (typeof value === 'object' && value !== null) {
       if (seen.has(value)) {
         return;
       }

@@ -2,7 +2,7 @@
   "private": true,
   "displayName": "Homebridge Chromecast with Google TV",
   "name": "homebridge-chromecast-google-tv",
-  "version": "1.0.0",
+  "version": "1.0.1-beta.0",
   "description": "Integration with google TV to control it with HomeKit and create integrations",
   "license": "Apache-2.0",
   "repository": {

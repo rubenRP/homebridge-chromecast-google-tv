@@ -24,10 +24,7 @@ export class ChromecastGoogleTVPlatformAccessory {
   ) {
     // Launch Cast Client
     if (accessory.context.device.addresses[0]) {
-      this.castManager(
-        accessory.context.device.addresses[0],
-        accessory.context.device.port || 8009,
-      );
+      this.castManager(accessory.context.device.addresses[0]);
     }
 
     const tvName = 'Google TV';

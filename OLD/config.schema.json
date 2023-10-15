@@ -1,17 +1,17 @@
 {
-  "pluginAlias": "HomebridgeChromecastGoogleTV",
+  "pluginAlias": "ChromecastTelevision",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "Add your Chromecast with Google TV.",
-  "footerDisplay": "If you need more info, check out the <a href='https://github.com/rubenRP/homebridge-chromecast-google-tv/blob/main/README.md'>ReadMe</a>",
+  "headerDisplay": "Add your Chromecast or Chromecast Ultra to Homebridge.",
+  "footerDisplay": "If you need more info, check out the <a href='https://github.com/rubenRP/homebridge-chromecast-television/blob/main/README.md'>ReadMe</a>",
   "schema": {
     "type": "object",
     "properties": {
       "name": {
         "title": "Name",
         "type": "string",
-        "required": true,
-        "default": "Google TV"
+        "default": "ChromecastTelevision",
+        "required": true
       },
       "category": {
         "title": "Device Category",

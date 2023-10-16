@@ -205,6 +205,16 @@ export class ChromecastGoogleTVPlatformAccessory {
 
   updateChromecastState(status) {
     this.platform.log.info('Updating Chromecast state: ', status);
+
+    // Triggers and updates the HomeKit accessory with the new Chromecast state
+    if (this.chromecastStates.On !== !status.isStandBy) {
+      this.platform.log.info('Updating Chromecast state change');
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.Active,
+        !status.isStandBy,
+      );
+    }
+
     this.chromecastStates.On = !status.isStandBy;
     this.chromecastStates.Volume = status.volume.level * 100;
     this.chromecastStates.Muted = status.volume.muted;

@@ -84,38 +84,6 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   discoverDevices() {
-    const device = {
-      exampleUniqueId: 'ABCD',
-      name: 'Bedroom',
-    };
-
-    const uuid = this.api.hap.uuid.generate(device.exampleUniqueId);
-
-    const existingAccessory = this.accessories.find(
-      (accessory) => accessory.UUID === uuid,
-    );
-
-    if (existingAccessory) {
-      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
-        existingAccessory,
-      ]);
-    }
-
-    const accessory = new this.api.platformAccessory(device.name, uuid);
-
-    // store a copy of the device object in the `accessory.context`
-    // the `context` property can be used to store any data about the accessory you may need
-    accessory.context.device = device;
-
-    // create the accessory handler for the newly create accessory
-    // this is imported from `platformAccessory.ts`
-    new ChromecastGoogleTVPlatformAccessory(this, accessory);
-
-    // link the accessory to your platform
-    this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
-      accessory,
-    ]);
-
     this.log.info('Searching for Chromecast devices...');
     this.castScanner.start();
 
@@ -131,13 +99,12 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
         ['Chromecast', 'Chromecast Ultra'].indexOf(device.txtRecord.md) !== -1
       ) {
         const uuid = this.api.hap.uuid.generate(device.txtRecord.id);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const existingAccessory = this.accessories.find(
           (accessory) => accessory.UUID === uuid,
         );
 
-        /* if (existingAccessory) {
-          this.log.info(
+        if (existingAccessory) {
+          /*           this.log.info(
             'Restoring existing accessory from cache:',
             existingAccessory.displayName,
           );
@@ -159,27 +126,32 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
           // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
           // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
 
-          this.castScanner.stop();
-        } else {
-          this.log.info('Adding new accessory:', device.name);
+          this.castScanner.stop(); */
 
-          const accessory = new this.api.platformAccessory(device.name, uuid);
-
-          // store a copy of the device object in the `accessory.context`
-          // the `context` property can be used to store any data about the accessory you may need
-          accessory.context.device = device;
-
-          // create the accessory handler for the newly create accessory
-          // this is imported from `platformAccessory.ts`
-          new ChromecastGoogleTVPlatformAccessory(this, accessory);
-
-          // link the accessory to your platform
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
-            accessory,
+          this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+            existingAccessory,
           ]);
+        }
+        // } else {
+        this.log.info('Adding new accessory:', device.name);
 
-          this.castScanner.stop();
-        } */
+        const accessory = new this.api.platformAccessory(device.name, uuid);
+
+        // store a copy of the device object in the `accessory.context`
+        // the `context` property can be used to store any data about the accessory you may need
+        accessory.context.device = device;
+
+        // create the accessory handler for the newly create accessory
+        // this is imported from `platformAccessory.ts`
+        new ChromecastGoogleTVPlatformAccessory(this, accessory);
+
+        // link the accessory to your platform
+        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+          accessory,
+        ]);
+
+        this.castScanner.stop();
+        //}
       }
     });
   }

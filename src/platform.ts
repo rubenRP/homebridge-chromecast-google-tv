@@ -116,8 +116,6 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
       accessory,
     ]);
 
-    return;
-
     this.log.info('Searching for Chromecast devices...');
     this.castScanner.start();
 
@@ -133,11 +131,12 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
         ['Chromecast', 'Chromecast Ultra'].indexOf(device.txtRecord.md) !== -1
       ) {
         const uuid = this.api.hap.uuid.generate(device.txtRecord.id);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const existingAccessory = this.accessories.find(
           (accessory) => accessory.UUID === uuid,
         );
 
-        if (existingAccessory) {
+        /* if (existingAccessory) {
           this.log.info(
             'Restoring existing accessory from cache:',
             existingAccessory.displayName,
@@ -180,7 +179,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
           ]);
 
           this.castScanner.stop();
-        }
+        } */
       }
     });
   }

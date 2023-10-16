@@ -104,7 +104,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
         );
 
         if (existingAccessory) {
-          /*           this.log.info(
+          this.log.info(
             'Restoring existing accessory from cache:',
             existingAccessory.displayName,
           );
@@ -126,32 +126,27 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
           // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
           // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
 
-          this.castScanner.stop(); */
+          this.castScanner.stop();
+        } else {
+          this.log.info('Adding new accessory:', device.name);
 
-          this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
-            existingAccessory,
+          const accessory = new this.api.platformAccessory(device.name, uuid);
+
+          // store a copy of the device object in the `accessory.context`
+          // the `context` property can be used to store any data about the accessory you may need
+          accessory.context.device = device;
+
+          // create the accessory handler for the newly create accessory
+          // this is imported from `platformAccessory.ts`
+          new ChromecastGoogleTVPlatformAccessory(this, accessory);
+
+          // link the accessory to your platform
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+            accessory,
           ]);
+
+          this.castScanner.stop();
         }
-        // } else {
-        this.log.info('Adding new accessory:', device.name);
-
-        const accessory = new this.api.platformAccessory(device.name, uuid);
-
-        // store a copy of the device object in the `accessory.context`
-        // the `context` property can be used to store any data about the accessory you may need
-        accessory.context.device = device;
-
-        // create the accessory handler for the newly create accessory
-        // this is imported from `platformAccessory.ts`
-        new ChromecastGoogleTVPlatformAccessory(this, accessory);
-
-        // link the accessory to your platform
-        this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
-          accessory,
-        ]);
-
-        this.castScanner.stop();
-        //}
       }
     });
   }

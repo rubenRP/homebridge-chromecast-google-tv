@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const mdns = require('mdns');
+import mdns from 'mdns';
 
 const mdnsSequence = [
   mdns.rst.DNSServiceResolve(),

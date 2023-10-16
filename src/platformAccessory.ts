@@ -30,7 +30,7 @@ export class ChromecastGoogleTVPlatformAccessory {
     const tvName = 'Google TV';
 
     // set accessory information
-    this.accessory
+    /*     this.accessory
       .getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(
         this.platform.Characteristic.Manufacturer,
@@ -45,7 +45,7 @@ export class ChromecastGoogleTVPlatformAccessory {
       .setCharacteristic(
         this.platform.Characteristic.SerialNumber,
         accessory.context.device.txtRecord.id,
-      );
+      ); */
 
     /*  this.service =
       this.accessory.getService(this.platform.Service.Television) ||

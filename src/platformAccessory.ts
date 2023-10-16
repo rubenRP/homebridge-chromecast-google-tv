@@ -23,9 +23,9 @@ export class ChromecastGoogleTVPlatformAccessory {
     private readonly accessory: PlatformAccessory,
   ) {
     // Launch Cast Client
-    if (accessory.context.device.addresses[0]) {
+    /*     if (accessory.context.device.addresses[0]) {
       this.castManager(accessory.context.device.addresses[0]);
-    }
+    } */
 
     const tvName = 'Google TV';
 

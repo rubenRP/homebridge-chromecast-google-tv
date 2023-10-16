@@ -8,8 +8,10 @@ import {
   Characteristic,
 } from 'homebridge';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import mdns from 'mdns';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { mdnsSequence } from './helpers';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';

@@ -8,7 +8,9 @@ import {
   Characteristic,
 } from 'homebridge';
 
-import mdns from 'mdns';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const mdns = require('mdns');
+
 import { mdnsSequence } from './helpers';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
@@ -26,7 +28,8 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
-  public castScanner: mdns.Browser;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public castScanner: any;
 
   constructor(
     public readonly log: Logger,
@@ -83,7 +86,8 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
     this.log.info('Searching for Chromecast devices...');
     this.castScanner.start();
 
-    this.castScanner.on('serviceUp', (device: mdns.Service) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.castScanner.on('serviceUp', (device: any) => {
       this.log.info(
         'Found device. Adding if supported: ' + device.txtRecord.md,
       );

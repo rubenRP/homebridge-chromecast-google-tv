@@ -39,9 +39,9 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
 
-    /*     this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
+    this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
       resolverSequence: mdnsSequence,
-    }); */
+    });
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,

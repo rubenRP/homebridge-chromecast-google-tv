@@ -39,9 +39,9 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
 
-    this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
+    /*     this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
       resolverSequence: mdnsSequence,
-    });
+    }); */
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
@@ -53,7 +53,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
       this.discoverDevices();
     });
 
-    setTimeout(
+    /*     setTimeout(
       () => {
         this.castScanner.stop();
         this.log.info('scanAccesories() - Restarting Chromecast Scanner');
@@ -64,7 +64,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
         this.discoverDevices();
       },
       30 * 60 * 1000,
-    );
+    ); */
   }
 
   /**
@@ -84,6 +84,40 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   discoverDevices() {
+    const device = {
+      exampleUniqueId: 'ABCD',
+      name: 'Bedroom',
+    };
+
+    const uuid = this.api.hap.uuid.generate(device.exampleUniqueId);
+
+    const existingAccessory = this.accessories.find(
+      (accessory) => accessory.UUID === uuid,
+    );
+
+    if (existingAccessory) {
+      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+        existingAccessory,
+      ]);
+    }
+
+    const accessory = new this.api.platformAccessory(device.name, uuid);
+
+    // store a copy of the device object in the `accessory.context`
+    // the `context` property can be used to store any data about the accessory you may need
+    accessory.context.device = device;
+
+    // create the accessory handler for the newly create accessory
+    // this is imported from `platformAccessory.ts`
+    new ChromecastGoogleTVPlatformAccessory(this, accessory);
+
+    // link the accessory to your platform
+    this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [
+      accessory,
+    ]);
+
+    return;
+
     this.log.info('Searching for Chromecast devices...');
     this.castScanner.start();
 

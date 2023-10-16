@@ -180,7 +180,7 @@ export class ChromecastGoogleTVPlatformAccessory {
       if (client && client.connection && client.heartbeat && client.receiver) {
         this.platform.log.info('Client is connected');
         client.receiver.on('status', (status) => {
-          this.platform.log.info('status broadcast', status);
+          this.platform.log.debug('status broadcast', status);
           this.updateChromecastState(status);
         });
         client.heartbeat.on('timeout', () => {
@@ -196,7 +196,7 @@ export class ChromecastGoogleTVPlatformAccessory {
           this.platform.log.info('Client receiver error', e);
         });
         client.getStatus((err, status) => {
-          this.platform.log.info('status', status);
+          this.platform.log.debug('status', status);
           this.updateChromecastState(status);
         });
       }
@@ -204,7 +204,7 @@ export class ChromecastGoogleTVPlatformAccessory {
   }
 
   updateChromecastState(status) {
-    this.platform.log.info('Updating Chromecast state: ', status);
+    this.platform.log.debug('Updating Chromecast state: ', status);
 
     // Triggers and updates the HomeKit accessory with the new Chromecast state
     if (this.chromecastStates.On !== !status.isStandBy) {

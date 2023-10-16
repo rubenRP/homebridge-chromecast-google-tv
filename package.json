@@ -12,7 +12,6 @@
     "url": "https://github.com/rubenRP/homebridge-chromecast-google-tv/issues"
   },
   "engines": {
-    "node": ">=18.17.0",
     "homebridge": "^1.6.0"
   },
   "main": "dist/index.js",

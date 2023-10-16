@@ -126,7 +126,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
           // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
           // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
 
-          this.castScanner.stop();
+          // this.castScanner.stop();
         } else {
           this.log.info('Adding new accessory:', device.name);
 
@@ -145,7 +145,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
             accessory,
           ]);
 
-          this.castScanner.stop();
+          // this.castScanner.stop();
         }
       }
     });

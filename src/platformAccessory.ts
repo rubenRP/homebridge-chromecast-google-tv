@@ -47,13 +47,11 @@ export class ChromecastGoogleTVPlatformAccessory {
         accessory.context.device.txtRecord.id,
       );
 
-    this.service =
+    /*  this.service =
       this.accessory.getService(this.platform.Service.Television) ||
       this.accessory.addService(this.platform.Service.Television);
 
-    // set the service name, this is what is displayed as the default name on the Home app
-    // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
-    this.service.setCharacteristic(this.platform.Characteristic.Name, tvName);
+
 
     // set sleep discovery characteristic
     this.service.setCharacteristic(
@@ -65,16 +63,24 @@ export class ChromecastGoogleTVPlatformAccessory {
     this.service.setCharacteristic(
       this.platform.Characteristic.ActiveIdentifier,
       1,
-    );
+    ); */
+
+    this.service =
+      this.accessory.getService(this.platform.Service.Switch) ||
+      this.accessory.addService(this.platform.Service.Switch);
+
+    // set the service name, this is what is displayed as the default name on the Home app
+    // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
+    this.service.setCharacteristic(this.platform.Characteristic.Name, tvName);
 
     // handle on / off events using the Active characteristic
     this.service
-      .getCharacteristic(this.platform.Characteristic.Active)
-      .onGet(this.getOn.bind(this)) // GET - bind to the `getOn` method below
-      .onSet(this.setOn.bind(this)); // SET - bind to the `setOn` method below
+      .getCharacteristic(this.platform.Characteristic.On)
+      .onGet(this.getOn.bind(this)); // GET - bind to the `getOn` method below
+    // SET - bind to the `setOn` method below
 
     // handle remote control input
-    this.service
+    /* this.service
       .getCharacteristic(this.platform.Characteristic.RemoteKey)
       .onSet((newValue) => {
         switch (newValue) {
@@ -131,7 +137,7 @@ export class ChromecastGoogleTVPlatformAccessory {
             break;
           }
         }
-      });
+      }); */
   }
 
   /**
@@ -164,9 +170,11 @@ export class ChromecastGoogleTVPlatformAccessory {
     this.platform.log.debug('Get Characteristic On ->', isOn);
 
     if (isOn) {
-      return this.platform.Characteristic.Active.ACTIVE;
+      return true;
+      //return this.platform.Characteristic.Active.ACTIVE;
     }
-    return this.platform.Characteristic.Active.INACTIVE;
+    return false;
+    // return this.platform.Characteristic.Active.INACTIVE;
 
     // if you need to return an error to show the device as "Not Responding" in the Home app:
     // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);

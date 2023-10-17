@@ -23,14 +23,14 @@ export class ChromecastGoogleTVPlatformAccessory {
     private readonly accessory: PlatformAccessory,
   ) {
     // Launch Cast Client
-    /*     if (accessory.context.device.addresses[0]) {
+    if (accessory.context.device.addresses[0]) {
       this.castManager(accessory.context.device.addresses[0]);
-    } */
+    }
 
     const tvName = 'Google TV';
 
     // set accessory information
-    /*     this.accessory
+    this.accessory
       .getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(
         this.platform.Characteristic.Manufacturer,
@@ -45,13 +45,11 @@ export class ChromecastGoogleTVPlatformAccessory {
       .setCharacteristic(
         this.platform.Characteristic.SerialNumber,
         accessory.context.device.txtRecord.id,
-      ); */
+      );
 
-    /*  this.service =
+    this.service =
       this.accessory.getService(this.platform.Service.Television) ||
       this.accessory.addService(this.platform.Service.Television);
-
-
 
     // set sleep discovery characteristic
     this.service.setCharacteristic(
@@ -63,11 +61,7 @@ export class ChromecastGoogleTVPlatformAccessory {
     this.service.setCharacteristic(
       this.platform.Characteristic.ActiveIdentifier,
       1,
-    ); */
-
-    this.service =
-      this.accessory.getService(this.platform.Service.Switch) ||
-      this.accessory.addService(this.platform.Service.Switch);
+    );
 
     // set the service name, this is what is displayed as the default name on the Home app
     // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
@@ -75,7 +69,7 @@ export class ChromecastGoogleTVPlatformAccessory {
 
     // handle on / off events using the Active characteristic
     this.service
-      .getCharacteristic(this.platform.Characteristic.On)
+      .getCharacteristic(this.platform.Characteristic.Active)
       .onGet(this.getOn.bind(this)); // GET - bind to the `getOn` method below
     // SET - bind to the `setOn` method below
 
@@ -170,11 +164,9 @@ export class ChromecastGoogleTVPlatformAccessory {
     this.platform.log.debug('Get Characteristic On ->', isOn);
 
     if (isOn) {
-      return true;
-      //return this.platform.Characteristic.Active.ACTIVE;
+      return this.platform.Characteristic.Active.ACTIVE;
     }
-    return false;
-    // return this.platform.Characteristic.Active.INACTIVE;
+    return this.platform.Characteristic.Active.INACTIVE;
 
     // if you need to return an error to show the device as "Not Responding" in the Home app:
     // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
@@ -217,10 +209,10 @@ export class ChromecastGoogleTVPlatformAccessory {
     // Triggers and updates the HomeKit accessory with the new Chromecast state
     if (this.chromecastStates.On !== !status.isStandBy) {
       this.platform.log.info('Updating Chromecast state change');
-      /*       this.service.updateCharacteristic(
+      this.service.updateCharacteristic(
         this.platform.Characteristic.Active,
         !status.isStandBy,
-      ); */
+      );
     }
 
     this.chromecastStates.On = !status.isStandBy;

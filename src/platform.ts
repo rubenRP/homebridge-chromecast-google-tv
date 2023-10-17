@@ -87,8 +87,15 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
     this.log.info('Searching for Chromecast devices...');
     this.castScanner.start();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.castScanner.on('serviceUp', (device: any) => {
+      this.log.info(
+        'Found device. Adding if supported: ' + device.txtRecord.md,
+      );
+      this.castScanner.stop();
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    /*     this.castScanner.on('serviceUp', (device: any) => {
       this.log.info(
         'Found device. Adding if supported: ' + device.txtRecord.md,
       );
@@ -126,7 +133,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
           // this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [existingAccessory]);
           // this.log.info('Removing existing accessory from cache:', existingAccessory.displayName);
 
-          // this.castScanner.stop();
+          this.castScanner.stop();
         } else {
           this.log.info('Adding new accessory:', device.name);
 
@@ -145,9 +152,9 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
             accessory,
           ]);
 
-          // this.castScanner.stop();
+          this.castScanner.stop();
         }
       }
-    });
+    }); */
   }
 }

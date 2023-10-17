@@ -14,7 +14,9 @@ import mdns from 'mdns';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { mdnsSequence } from './helpers';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ChromecastGoogleTVPlatformAccessory } from './platformAccessory';
 
 /**

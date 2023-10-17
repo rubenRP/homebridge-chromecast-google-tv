@@ -29,6 +29,8 @@ export class ChromecastGoogleTVPlatformAccessory {
 
     const tvName = 'Google TV';
 
+    this.accessory.category = this.platform.api.hap.Categories.TELEVISION;
+
     // set accessory information
     this.accessory
       .getService(this.platform.Service.AccessoryInformation)!

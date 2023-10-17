@@ -89,6 +89,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
     this.log.info('Searching for Chromecast devices...');
     this.castScanner.start();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.castScanner.on('serviceUp', (device: any) => {
       this.log.info(
         'Found device. Adding if supported: ' + device.txtRecord.md,

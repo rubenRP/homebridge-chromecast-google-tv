@@ -34,6 +34,8 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public castScanner: any;
 
+  public deviceDiscovered = false;
+
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
@@ -55,7 +57,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
       this.discoverDevices();
     });
 
-    /*     setTimeout(
+    setTimeout(
       () => {
         this.castScanner.stop();
         this.log.info('scanAccesories() - Restarting Chromecast Scanner');
@@ -63,10 +65,11 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
         this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
           resolverSequence: mdnsSequence,
         });
+        this.deviceDiscovered = false;
         this.discoverDevices();
       },
       30 * 60 * 1000,
-    ); */
+    );
   }
 
   /**
@@ -94,20 +97,15 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
       this.log.info(
         'Found device. Adding if supported: ' + device.txtRecord.md,
       );
-      this.castScanner.stop();
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    /*     this.castScanner.on('serviceUp', (device: any) => {
-      this.log.info(
-        'Found device. Adding if supported: ' + device.txtRecord.md,
-      );
 
       if (
         device &&
         device.txtRecord &&
-        ['Chromecast', 'Chromecast Ultra'].indexOf(device.txtRecord.md) !== -1
+        ['Chromecast', 'Chromecast Ultra'].indexOf(device.txtRecord.md) !==
+          -1 &&
+        !this.deviceDiscovered
       ) {
+        this.deviceDiscovered = true;
         const uuid = this.api.hap.uuid.generate(device.txtRecord.id);
         const existingAccessory = this.accessories.find(
           (accessory) => accessory.UUID === uuid,
@@ -158,6 +156,6 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
           this.castScanner.stop();
         }
       }
-    }); */
+    });
   }
 }

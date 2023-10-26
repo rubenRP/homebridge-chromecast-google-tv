@@ -1,5 +1,6 @@
 import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
 import { Client as CastClient } from 'castv2-client';
+// import { DefaultMediaReceiver } from 'castv2-client';
 
 import { ChromecastGoogleTVPlatform } from './platform';
 
@@ -17,6 +18,10 @@ export class ChromecastGoogleTVPlatformAccessory {
     Muted: false,
     App: 'Chromecast',
   };
+
+  private connected = false;
+
+  private castClient: CastClient;
 
   constructor(
     private readonly platform: ChromecastGoogleTVPlatform,
@@ -72,11 +77,11 @@ export class ChromecastGoogleTVPlatformAccessory {
     // handle on / off events using the Active characteristic
     this.service
       .getCharacteristic(this.platform.Characteristic.Active)
-      .onGet(this.getOn.bind(this)); // GET - bind to the `getOn` method below
-    // SET - bind to the `setOn` method below
+      .onGet(this.getOn.bind(this)) // GET - bind to the `getOn` method below
+      .onSet(this.setOn.bind(this)); // SET - bind to the `setOn` method below
 
     // handle remote control input
-    /* this.service
+    this.service
       .getCharacteristic(this.platform.Characteristic.RemoteKey)
       .onSet((newValue) => {
         switch (newValue) {
@@ -133,7 +138,7 @@ export class ChromecastGoogleTVPlatformAccessory {
             break;
           }
         }
-      }); */
+      });
   }
 
   /**
@@ -142,7 +147,6 @@ export class ChromecastGoogleTVPlatformAccessory {
    */
   async setOn(value: CharacteristicValue) {
     // implement your own code to turn your device on/off
-
     this.platform.log.debug('Set Characteristic On ->', value);
   }
 
@@ -175,29 +179,45 @@ export class ChromecastGoogleTVPlatformAccessory {
   }
 
   castManager(host: string) {
-    const client = new CastClient();
+    this.castClient = new CastClient();
 
-    client.connect(host, () => {
+    if (this.connected) {
+      this.platform.log.info('Client is already connected');
+      return;
+    }
+
+    this.castClient.connect(host, () => {
       this.platform.log.info('Connected to Chromecast at ' + host);
-      if (client && client.connection && client.heartbeat && client.receiver) {
+      this.connected = true;
+
+      if (
+        this.castClient &&
+        this.castClient.connection &&
+        this.castClient.heartbeat &&
+        this.castClient.receiver
+      ) {
         this.platform.log.info('Client is connected');
-        client.receiver.on('status', (status) => {
+        this.castClient.receiver.on('status', (status) => {
           this.platform.log.debug('status broadcast', status);
           this.updateChromecastState(status);
         });
-        client.heartbeat.on('timeout', () => {
+        this.castClient.heartbeat.on('timeout', () => {
           this.platform.log.info('Client heartbeat timeout');
         });
-        client.heartbeat.on('pong', () => {
+        this.castClient.heartbeat.on('pong', () => {
           // this.platform.log.debug("Client heartbeat pong");
         });
-        client.receiver.on('close', () => {
+        this.castClient.receiver.on('close', () => {
           this.platform.log.info('Client receiver close');
+          this.connected = false;
+          this.castManager(host);
         });
-        client.receiver.on('error', (e) => {
+        this.castClient.receiver.on('error', (e) => {
           this.platform.log.info('Client receiver error', e);
+          this.connected = false;
+          this.castManager(host);
         });
-        client.getStatus((err, status) => {
+        this.castClient.getStatus((err, status) => {
           this.platform.log.debug('status', status);
           this.updateChromecastState(status);
         });

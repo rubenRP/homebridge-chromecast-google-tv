@@ -1,6 +1,6 @@
 {
   "displayName": "Homebridge Chromecast with Google TV",
-  "name": "homebridge-chromecast-google-tv",
+  "name": "@rubenrp/homebridge-chromecast-google-tv",
   "type": "module",
   "private": true,
   "version": "2.0.0",
@@ -8,7 +8,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rubenRP/homebridge-chromecast-google-tv.git"
+    "url": "git+https://github.com/rubenRP/homebridge-chromecast-google-tv.git"
   },
   "bugs": {
     "url": "https://github.com/rubenRP/homebridge-chromecast-google-tv/issues"
@@ -45,5 +45,11 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.24.1"
-  }
+  },
+  "directories": {
+    "test": "test"
+  },
+  "author": "Ruben Rodriguez",
+  "types": "./dist/index.d.ts",
+  "homepage": "https://github.com/rubenRP/homebridge-chromecast-google-tv#readme"
 }

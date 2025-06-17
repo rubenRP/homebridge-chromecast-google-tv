@@ -1,8 +1,9 @@
-import { Service, PlatformAccessory, CharacteristicValue } from 'homebridge';
-import { Client as CastClient } from 'castv2-client';
+import { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
+// Dynamic import for castv2-client
+let CastClient: any;
 // import { DefaultMediaReceiver } from 'castv2-client';
 
-import { ChromecastGoogleTVPlatform } from './platform';
+import { ChromecastGoogleTVPlatform } from './platform.js';
 
 /**
  * Platform Accessory
@@ -11,6 +12,8 @@ import { ChromecastGoogleTVPlatform } from './platform';
  */
 export class ChromecastGoogleTVPlatformAccessory {
   private service: Service;
+  private inputSources: Map<string, Service> = new Map();
+  private currentActiveIdentifier = 0;
 
   private chromecastStates = {
     On: false,
@@ -21,15 +24,21 @@ export class ChromecastGoogleTVPlatformAccessory {
 
   private connected = false;
 
-  private castClient: CastClient;
+  private castClient: any;
 
   constructor(
     private readonly platform: ChromecastGoogleTVPlatform,
     private readonly accessory: PlatformAccessory,
   ) {
     // Launch Cast Client
-    if (accessory.context.device.addresses[0]) {
-      this.castManager(accessory.context.device.addresses[0]);
+    if (
+      accessory.context.device.addresses &&
+      accessory.context.device.addresses.length > 0
+    ) {
+      const preferredAddress = this.getPreferredAddress(
+        accessory.context.device.addresses,
+      );
+      this.castManager(preferredAddress);
     }
 
     const tvName = 'Google TV';
@@ -64,11 +73,25 @@ export class ChromecastGoogleTVPlatformAccessory {
       this.platform.Characteristic.SleepDiscoveryMode.ALWAYS_DISCOVERABLE,
     );
 
+    // Create default input sources
+    this.setupDefaultInputSources();
+
     // handle input source changes
     this.service.setCharacteristic(
       this.platform.Characteristic.ActiveIdentifier,
       1,
     );
+
+    // Handle input source selection
+    this.service
+      .getCharacteristic(this.platform.Characteristic.ActiveIdentifier)
+      .onSet((inputIdentifier: CharacteristicValue) => {
+        this.platform.log.info(
+          `Input source changed to ID: ${inputIdentifier}`,
+        );
+        // Note: We mainly update this characteristic from Chromecast state changes
+        // but this handler allows for future input switching functionality
+      });
 
     // set the service name, this is what is displayed as the default name on the Home app
     // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
@@ -79,66 +102,6 @@ export class ChromecastGoogleTVPlatformAccessory {
       .getCharacteristic(this.platform.Characteristic.Active)
       .onGet(this.getOn.bind(this)) // GET - bind to the `getOn` method below
       .onSet(this.setOn.bind(this)); // SET - bind to the `setOn` method below
-
-    // handle remote control input
-    this.service
-      .getCharacteristic(this.platform.Characteristic.RemoteKey)
-      .onSet((newValue) => {
-        switch (newValue) {
-          case this.platform.Characteristic.RemoteKey.REWIND: {
-            this.platform.log.info('set Remote Key Pressed: REWIND');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.FAST_FORWARD: {
-            this.platform.log.info('set Remote Key Pressed: FAST_FORWARD');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.NEXT_TRACK: {
-            this.platform.log.info('set Remote Key Pressed: NEXT_TRACK');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.PREVIOUS_TRACK: {
-            this.platform.log.info('set Remote Key Pressed: PREVIOUS_TRACK');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.ARROW_UP: {
-            this.platform.log.info('set Remote Key Pressed: ARROW_UP');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.ARROW_DOWN: {
-            this.platform.log.info('set Remote Key Pressed: ARROW_DOWN');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.ARROW_LEFT: {
-            this.platform.log.info('set Remote Key Pressed: ARROW_LEFT');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.ARROW_RIGHT: {
-            this.platform.log.info('set Remote Key Pressed: ARROW_RIGHT');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.SELECT: {
-            this.platform.log.info('set Remote Key Pressed: SELECT');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.BACK: {
-            this.platform.log.info('set Remote Key Pressed: BACK');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.EXIT: {
-            this.platform.log.info('set Remote Key Pressed: EXIT');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.PLAY_PAUSE: {
-            this.platform.log.info('set Remote Key Pressed: PLAY_PAUSE');
-            break;
-          }
-          case this.platform.Characteristic.RemoteKey.INFORMATION: {
-            this.platform.log.info('set Remote Key Pressed: INFORMATION');
-            break;
-          }
-        }
-      });
   }
 
   /**
@@ -178,54 +141,107 @@ export class ChromecastGoogleTVPlatformAccessory {
     // throw new this.platform.api.hap.HapStatusError(this.platform.api.hap.HAPStatus.SERVICE_COMMUNICATION_FAILURE);
   }
 
-  castManager(host: string) {
-    this.castClient = new CastClient();
-
-    if (this.connected) {
-      this.platform.log.info('Client is already connected');
-      return;
-    }
-
-    this.castClient.connect(host, () => {
-      this.platform.log.info('Connected to Chromecast at ' + host);
-      this.connected = true;
-
-      if (
-        this.castClient &&
-        this.castClient.connection &&
-        this.castClient.heartbeat &&
-        this.castClient.receiver
-      ) {
-        this.platform.log.info('Client is connected');
-        this.castClient.receiver.on('status', (status) => {
-          this.platform.log.debug('status broadcast', status);
-          this.updateChromecastState(status);
-        });
-        this.castClient.heartbeat.on('timeout', () => {
-          this.platform.log.info('Client heartbeat timeout');
-        });
-        this.castClient.heartbeat.on('pong', () => {
-          // this.platform.log.debug("Client heartbeat pong");
-        });
-        this.castClient.receiver.on('close', () => {
-          this.platform.log.info('Client receiver close');
-          this.connected = false;
-          this.castManager(host);
-        });
-        this.castClient.receiver.on('error', (e) => {
-          this.platform.log.info('Client receiver error', e);
-          this.connected = false;
-          this.castManager(host);
-        });
-        this.castClient.getStatus((err, status) => {
-          this.platform.log.debug('status', status);
-          this.updateChromecastState(status);
-        });
+  async castManager(host: string) {
+    try {
+      if (!CastClient) {
+        const castModule = await import('castv2-client');
+        CastClient = castModule.Client;
       }
-    });
+
+      this.castClient = new CastClient();
+
+      if (this.connected) {
+        this.platform.log.info('Client is already connected');
+        return;
+      }
+
+      this.castClient.connect(host, () => {
+        this.platform.log.info('Connected to Chromecast at ' + host);
+        this.connected = true;
+
+        if (
+          this.castClient &&
+          this.castClient.connection &&
+          this.castClient.heartbeat &&
+          this.castClient.receiver
+        ) {
+          this.platform.log.info('Client is connected');
+          this.castClient.receiver.on('status', (status: any) => {
+            this.platform.log.debug('status broadcast', status);
+            this.updateChromecastState(status);
+          });
+          this.castClient.heartbeat.on('timeout', () => {
+            this.platform.log.info('Client heartbeat timeout');
+          });
+          this.castClient.heartbeat.on('pong', () => {
+            // this.platform.log.debug("Client heartbeat pong");
+          });
+          this.castClient.receiver.on('close', () => {
+            this.platform.log.info('Client receiver close');
+            this.connected = false;
+            this.castManager(host);
+          });
+          this.castClient.receiver.on('error', (e: any) => {
+            this.platform.log.info('Client receiver error', e);
+            this.connected = false;
+            this.castManager(host);
+          });
+          this.castClient.getStatus((err: any, status: any) => {
+            this.platform.log.debug('status', status);
+            this.updateChromecastState(status);
+          });
+        }
+      });
+
+      // Add error handling for connection failures
+      this.castClient.on('error', (error: any) => {
+        this.platform.log.warn(
+          `Failed to connect to Chromecast at ${host}:`,
+          error.message,
+        );
+        this.connected = false;
+        // Don't retry immediately on network errors to avoid spam
+        if (
+          error.code === 'ENETUNREACH' ||
+          error.code === 'ECONNREFUSED' ||
+          error.code === 'ETIMEDOUT'
+        ) {
+          this.platform.log.warn(
+            `Network unreachable for ${host}, will retry later`,
+          );
+          return;
+        }
+        // Retry for other errors after a delay
+        setTimeout(() => {
+          this.castManager(host);
+        }, 10000); // Retry after 10 seconds
+      });
+    } catch (error) {
+      this.platform.log.error('Failed to initialize cast client:', error);
+    }
   }
 
-  updateChromecastState(status) {
+  /**
+   * Helper method to prefer IPv4 addresses over IPv6 to avoid network connectivity issues
+   */
+  private getPreferredAddress(addresses: string[]): string {
+    // First try to find an IPv4 address
+    const ipv4Address = addresses.find((addr) => {
+      // Simple IPv4 pattern check (not containing colons)
+      return !addr.includes(':') || addr.includes('.');
+    });
+
+    if (ipv4Address) {
+      this.platform.log.debug(`Using IPv4 address: ${ipv4Address}`);
+      return ipv4Address;
+    }
+
+    // Fall back to the first address if no IPv4 found
+    this.platform.log.debug(`Using fallback address: ${addresses[0]}`);
+    return addresses[0];
+  }
+
+  updateChromecastState(status: any) {
     this.platform.log.debug('Updating Chromecast state: ', status);
 
     // Triggers and updates the HomeKit accessory with the new Chromecast state
@@ -240,8 +256,199 @@ export class ChromecastGoogleTVPlatformAccessory {
     this.chromecastStates.On = !status.isStandBy;
     this.chromecastStates.Volume = status.volume.level * 100;
     this.chromecastStates.Muted = status.volume.muted;
-    if (status.applications && status.applications[0]) {
-      this.chromecastStates.App = status.applications[0].displayName;
+
+    // Log application info when Chromecast is active and update input source
+    if (
+      !status.isStandBy &&
+      status.applications &&
+      status.applications.length > 0
+    ) {
+      const app = status.applications[0];
+      this.platform.log.info(`Chromecast is active - Running application:`);
+      this.platform.log.info(`App Name: ${app.displayName}`);
+
+      this.chromecastStates.App = app.displayName;
+
+      // Update input source to show the current app
+      if (app.isIdleScreen) {
+        this.updateActiveInputSource('Home Screen');
+      } else {
+        this.updateActiveInputSource(app.displayName);
+      }
+    } else if (status.isStandBy) {
+      this.platform.log.info('Chromecast is in standby mode');
+      this.chromecastStates.App = 'Standby';
+
+      // Update input source to standby
+      this.updateActiveInputSource('Standby');
+    } else {
+      this.platform.log.info(
+        'Chromecast is active but no applications are running',
+      );
+      this.chromecastStates.App = 'Home Screen';
+
+      // Update input source to home screen
+      this.updateActiveInputSource('Home Screen');
+    }
+  }
+
+  /**
+   * Create an input source for an app
+   */
+  private createInputSource(appName: string, identifier: number): Service {
+    const subtype = appName.toLowerCase().replace(/\s+/g, '_');
+
+    // Check if service already exists
+    let inputService = this.accessory.getServiceById(
+      this.platform.Service.InputSource,
+      subtype,
+    );
+
+    if (!inputService) {
+      // Create new service only if it doesn't exist
+      inputService = this.accessory.addService(
+        this.platform.Service.InputSource,
+        appName,
+        subtype,
+      );
+
+      inputService
+        .setCharacteristic(this.platform.Characteristic.Identifier, identifier)
+        .setCharacteristic(this.platform.Characteristic.ConfiguredName, appName)
+        .setCharacteristic(this.platform.Characteristic.Name, appName)
+        .setCharacteristic(
+          this.platform.Characteristic.InputSourceType,
+          this.platform.Characteristic.InputSourceType.APPLICATION,
+        )
+        .setCharacteristic(
+          this.platform.Characteristic.IsConfigured,
+          this.platform.Characteristic.IsConfigured.CONFIGURED,
+        );
+
+      // Link the input source to the TV service
+      this.service.addLinkedService(inputService);
+
+      this.platform.log.info(
+        `Created input source: ${appName} (ID: ${identifier})`,
+      );
+    } else {
+      // Update existing service characteristics if needed
+      inputService
+        .setCharacteristic(this.platform.Characteristic.Identifier, identifier)
+        .setCharacteristic(this.platform.Characteristic.ConfiguredName, appName)
+        .setCharacteristic(this.platform.Characteristic.Name, appName);
+
+      this.platform.log.info(
+        `Restored existing input source: ${appName} (ID: ${identifier})`,
+      );
+    }
+
+    return inputService;
+  }
+
+  /**
+   * Get or create an input source for an app
+   */
+  private getOrCreateInputSource(appName: string): {
+    service: Service;
+    identifier: number;
+  } {
+    let inputService = this.inputSources.get(appName);
+    let identifier: number;
+
+    if (!inputService) {
+      // Create new input source
+      identifier = this.inputSources.size + 1;
+      inputService = this.createInputSource(appName, identifier);
+      this.inputSources.set(appName, inputService);
+    } else {
+      // Get existing identifier
+      identifier = inputService.getCharacteristic(
+        this.platform.Characteristic.Identifier,
+      ).value as number;
+    }
+
+    return { service: inputService, identifier };
+  }
+
+  /**
+   * Update the active input source
+   */
+  private updateActiveInputSource(appName: string) {
+    const { identifier } = this.getOrCreateInputSource(appName);
+
+    if (this.currentActiveIdentifier !== identifier) {
+      this.currentActiveIdentifier = identifier;
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.ActiveIdentifier,
+        identifier,
+      );
+      this.platform.log.info(
+        `Switched to input source: ${appName} (ID: ${identifier})`,
+      );
+    }
+  }
+
+  /**
+   * Setup default input sources
+   */
+  private setupDefaultInputSources() {
+    // First, restore any existing input sources from cache
+    this.restoreExistingInputSources();
+
+    // Create default "Standby" input source if not already exists
+    if (!this.inputSources.has('Standby')) {
+      const standbySource = this.createInputSource('Standby', 1);
+      this.inputSources.set('Standby', standbySource);
+      this.currentActiveIdentifier = 1;
+    }
+
+    // Create "Home Screen" input source if not already exists
+    if (!this.inputSources.has('Home Screen')) {
+      const homeSource = this.createInputSource('Home Screen', 2);
+      this.inputSources.set('Home Screen', homeSource);
+    }
+
+    // If we restored from cache, set current identifier appropriately
+    if (this.currentActiveIdentifier === 0) {
+      this.currentActiveIdentifier = 1; // Default to Standby
+    }
+  }
+
+  /**
+   * Restore existing input sources from accessory cache
+   */
+  private restoreExistingInputSources() {
+    // Get all InputSource services from the accessory
+    const inputSourceServices = this.accessory.services.filter(
+      (service) => service.UUID === this.platform.Service.InputSource.UUID,
+    );
+
+    for (const service of inputSourceServices) {
+      const nameChar = service.getCharacteristic(
+        this.platform.Characteristic.Name,
+      );
+      const identifierChar = service.getCharacteristic(
+        this.platform.Characteristic.Identifier,
+      );
+
+      if (nameChar && identifierChar) {
+        const appName = nameChar.value as string;
+        const identifier = identifierChar.value as number;
+
+        this.inputSources.set(appName, service);
+        this.platform.log.info(
+          `Restored input source from cache: ${appName} (ID: ${identifier})`,
+        );
+
+        // Update currentActiveIdentifier if this was the previously active one
+        const activeId = this.service.getCharacteristic(
+          this.platform.Characteristic.ActiveIdentifier,
+        ).value as number;
+        if (identifier === activeId) {
+          this.currentActiveIdentifier = identifier;
+        }
+      }
     }
   }
 }

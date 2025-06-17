@@ -1,11 +1,11 @@
 import { API } from 'homebridge';
 
-import { PLATFORM_NAME } from './settings';
-import { ChromecastGoogleTVPlatform } from './platform';
+import { ChromecastGoogleTVPlatform } from './platform.js';
+import { PLATFORM_NAME } from './settings.js';
 
 /**
  * This method registers the platform with Homebridge
  */
-export = (api: API) => {
+export default (api: API) => {
   api.registerPlatform(PLATFORM_NAME, ChromecastGoogleTVPlatform);
 };

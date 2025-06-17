@@ -1,23 +1,20 @@
 import {
   API,
+  Characteristic,
   DynamicPlatformPlugin,
   Logger,
   PlatformAccessory,
   PlatformConfig,
   Service,
-  Characteristic,
 } from 'homebridge';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import mdns from 'mdns';
+import { getMdnsSequence, initMdns } from './helpers.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { mdnsSequence } from './helpers';
-
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ChromecastGoogleTVPlatformAccessory } from './platformAccessory';
+import { ChromecastGoogleTVPlatformAccessory } from './platformAccessory.js';
 
 /**
  * HomebridgePlatform
@@ -25,9 +22,8 @@ import { ChromecastGoogleTVPlatformAccessory } from './platformAccessory';
  * parse the user config and discover/register accessories with Homebridge.
  */
 export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
-  public readonly Service: typeof Service = this.api.hap.Service;
-  public readonly Characteristic: typeof Characteristic =
-    this.api.hap.Characteristic;
+  public readonly Service: typeof Service;
+  public readonly Characteristic: typeof Characteristic;
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
@@ -43,33 +39,58 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
 
-    this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
-      resolverSequence: mdnsSequence,
-    });
+    // Initialize Service and Characteristic after api is available
+    this.Service = this.api.hap.Service;
+    this.Characteristic = this.api.hap.Characteristic;
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
     // in order to ensure they weren't added to homebridge already. This event can also be used
     // to start discovery of new accessories.
-    this.api.on('didFinishLaunching', () => {
+    this.api.on('didFinishLaunching', async () => {
       log.debug('Executed didFinishLaunching callback');
+      // Ensure mDNS is initialized before starting discovery
+      await this.initializeMdns();
       // run the method to discover / register your devices as accessories
       this.discoverDevices();
     });
 
-    setTimeout(
-      () => {
-        this.castScanner.stop();
-        this.log.info('scanAccesories() - Restarting Chromecast Scanner');
+    setTimeout(() => {
+      this.restartScanner();
+    }, 30 * 60 * 1000);
+  }
 
-        this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
-          resolverSequence: mdnsSequence,
-        });
-        this.deviceDiscovered = false;
-        this.discoverDevices();
-      },
-      30 * 60 * 1000,
-    );
+  private async initializeMdns() {
+    try {
+      const mdns = await initMdns();
+      const mdnsSequence = await getMdnsSequence();
+
+      this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
+        resolverSequence: mdnsSequence,
+      });
+    } catch (error) {
+      this.log.error('Failed to initialize mDNS:', error);
+    }
+  }
+
+  private async restartScanner() {
+    try {
+      if (this.castScanner) {
+        this.castScanner.stop();
+      }
+      this.log.info('scanAccesories() - Restarting Chromecast Scanner');
+
+      const mdns = await initMdns();
+      const mdnsSequence = await getMdnsSequence();
+
+      this.castScanner = mdns.createBrowser(mdns.tcp('googlecast'), {
+        resolverSequence: mdnsSequence,
+      });
+      this.deviceDiscovered = false;
+      this.discoverDevices();
+    } catch (error) {
+      this.log.error('Failed to restart scanner:', error);
+    }
   }
 
   /**
@@ -89,6 +110,11 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   discoverDevices() {
+    if (!this.castScanner) {
+      this.log.error('Cast scanner not initialized');
+      return;
+    }
+
     this.log.info('Searching for Chromecast devices...');
     this.castScanner.start();
 

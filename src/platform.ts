@@ -8,13 +8,10 @@ import {
   Service,
 } from 'homebridge';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getMdnsSequence, initMdns } from './helpers.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ChromecastGoogleTVPlatformAccessory } from './platformAccessory.js';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
 /**
  * HomebridgePlatform

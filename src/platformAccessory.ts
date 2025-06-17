@@ -1,9 +1,8 @@
 import { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
-// Dynamic import for castv2-client
-let CastClient: any;
-// import { DefaultMediaReceiver } from 'castv2-client';
-
 import { ChromecastGoogleTVPlatform } from './platform.js';
+// Dynamic import for castv2-client
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let CastClient: any;
 
 /**
  * Platform Accessory
@@ -24,6 +23,7 @@ export class ChromecastGoogleTVPlatformAccessory {
 
   private connected = false;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private castClient: any;
 
   constructor(
@@ -166,6 +166,7 @@ export class ChromecastGoogleTVPlatformAccessory {
           this.castClient.receiver
         ) {
           this.platform.log.info('Client is connected');
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           this.castClient.receiver.on('status', (status: any) => {
             this.platform.log.debug('status broadcast', status);
             this.updateChromecastState(status);
@@ -174,18 +175,19 @@ export class ChromecastGoogleTVPlatformAccessory {
             this.platform.log.info('Client heartbeat timeout');
           });
           this.castClient.heartbeat.on('pong', () => {
-            // this.platform.log.debug("Client heartbeat pong");
+            // this.platform.log.debug('Client heartbeat pong');
           });
           this.castClient.receiver.on('close', () => {
             this.platform.log.info('Client receiver close');
             this.connected = false;
             this.castManager(host);
           });
-          this.castClient.receiver.on('error', (e: any) => {
+          this.castClient.receiver.on('error', (e: Error) => {
             this.platform.log.info('Client receiver error', e);
             this.connected = false;
             this.castManager(host);
           });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           this.castClient.getStatus((err: any, status: any) => {
             this.platform.log.debug('status', status);
             this.updateChromecastState(status);
@@ -194,7 +196,7 @@ export class ChromecastGoogleTVPlatformAccessory {
       });
 
       // Add error handling for connection failures
-      this.castClient.on('error', (error: any) => {
+      this.castClient.on('error', (error: Error & { code?: string }) => {
         this.platform.log.warn(
           `Failed to connect to Chromecast at ${host}:`,
           error.message,
@@ -241,6 +243,7 @@ export class ChromecastGoogleTVPlatformAccessory {
     return addresses[0];
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   updateChromecastState(status: any) {
     this.platform.log.debug('Updating Chromecast state: ', status);
 
@@ -264,7 +267,7 @@ export class ChromecastGoogleTVPlatformAccessory {
       status.applications.length > 0
     ) {
       const app = status.applications[0];
-      this.platform.log.info(`Chromecast is active - Running application:`);
+      this.platform.log.info('Chromecast is active - Running application:');
       this.platform.log.info(`App Name: ${app.displayName}`);
 
       this.chromecastStates.App = app.displayName;

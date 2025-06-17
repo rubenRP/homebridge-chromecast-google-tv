@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let mdns: any;
+let mdns: typeof import('mdns') | undefined;
 
 // Dynamically import mdns
 const initMdns = async () => {
@@ -22,7 +21,7 @@ const getMdnsSequence = async () => {
 
 const getCircularReplacer = () => {
   const seen = new WeakSet();
-  return (key: string, value: any) => {
+  return (key: string, value: unknown) => {
     if (typeof value === 'object' && value !== null) {
       if (seen.has(value)) {
         return;

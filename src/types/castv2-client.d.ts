@@ -19,7 +19,7 @@ declare module 'castv2-client' {
   }
 
   export interface Connection {
-    [key: string]: any;
+    [key: string]: unknown;
   }
 
   export interface Heartbeat {

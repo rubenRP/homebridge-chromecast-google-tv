@@ -14,7 +14,7 @@ declare module 'mdns' {
   }
 
   export interface BrowserOptions {
-    resolverSequence?: any[];
+    resolverSequence?: unknown[];
   }
 
   export interface Browser {
@@ -34,13 +34,13 @@ declare module 'mdns' {
   ): Browser;
 
   export namespace rst {
-    export function DNSServiceResolve(): any;
-    export function DNSServiceGetAddrInfo(): any;
-    export function getaddrinfo(options: { families: number[] }): any;
-    export function makeAddressesUnique(): any;
+    export function DNSServiceResolve(): unknown;
+    export function DNSServiceGetAddrInfo(): unknown;
+    export function getaddrinfo(options: { families: number[] }): unknown;
+    export function makeAddressesUnique(): unknown;
   }
 
   export namespace dns_sd {
-    export const DNSServiceGetAddrInfo: any;
+    export const DNSServiceGetAddrInfo: unknown;
   }
 }

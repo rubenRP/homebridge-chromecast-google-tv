@@ -285,7 +285,7 @@ export class ChromecastGoogleTVPlatformAccessory {
             } else {
               clearInterval(statusInterval);
             }
-          }, 10000); // Poll every 10 seconds
+          }, 30000); // Poll every 30 seconds (2 times per minute)
         }
       });
 

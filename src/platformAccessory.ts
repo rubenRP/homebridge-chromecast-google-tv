@@ -71,7 +71,28 @@ export class ChromecastGoogleTVPlatformAccessory {
 
     const tvName = 'Google TV';
 
-    this.accessory.category = this.platform.api.hap.Categories.TELEVISION;
+    // Set accessory category based on configuration
+    const categoryConfig = this.platform.config.category || 'TELEVISION';
+    let categoryValue: number;
+
+    switch (categoryConfig) {
+      case 'TV_STREAMING_STICK':
+        categoryValue = this.platform.api.hap.Categories.TV_STREAMING_STICK;
+        break;
+      case 'TV_SET_TOP_BOX':
+        categoryValue = this.platform.api.hap.Categories.TV_SET_TOP_BOX;
+        break;
+      case 'APPLE_TV':
+        categoryValue = this.platform.api.hap.Categories.APPLE_TV;
+        break;
+      case 'TELEVISION':
+      default:
+        categoryValue = this.platform.api.hap.Categories.TELEVISION;
+        break;
+    }
+
+    this.accessory.category = categoryValue;
+    this.platform.log.info(`Setting accessory category to: ${categoryConfig}`);
 
     // set accessory information
     this.accessory

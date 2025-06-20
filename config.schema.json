@@ -15,9 +15,9 @@
       },
       "category": {
         "title": "Device Category",
-        "description": "Choose how you want the device displayed in HomeKit. Does not impact functionality.",
+        "description": "Choose how you want the device displayed in HomeKit. This affects the icon shown in Apple Home. Does not impact functionality.",
         "type": "string",
-        "default": "form",
+        "default": "TELEVISION",
         "oneOf": [
           {
             "title": "Television",

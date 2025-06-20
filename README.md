@@ -35,7 +35,16 @@ Add this to your config.json.
 ]
 ```
 
-You can specify category for HomeKit accessory - TELEVISION, TV_STREAMING_STICK, TV_SET_TOP_BOX, APPLE_TV. This does not change the device functions, but allows you to choose how the device is displayed in the Home app.
+### Configuration Options
+
+- **name**: The name that will appear in HomeKit
+- **category**: Controls the icon shown in Apple Home app. Options:
+  - `TELEVISION` - TV icon (default)
+  - `TV_STREAMING_STICK` - Streaming stick icon
+  - `TV_SET_TOP_BOX` - Set-top box icon
+  - `APPLE_TV` - Apple TV icon
+
+You can specify category for HomeKit accessory. This determines the icon displayed in the Apple Home app but does not change the device functions.
 ![Image](https://user-images.githubusercontent.com/8211291/123853650-b295ad80-d8eb-11eb-8d75-9ff557671ec9.jpeg)
 
 ## Behavior

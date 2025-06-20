@@ -33,14 +33,8 @@ export class ChromecastDiscovery extends EventEmitter {
     stop(): void;
     on(event: string, listener: (...args: unknown[]) => void): void;
   };
-  private fallbackBrowser?: {
-    start(): void;
-    stop(): void;
-    on(event: string, listener: (...args: unknown[]) => void): void;
-  };
   private isScanning = false;
   private scanTimeout?: NodeJS.Timeout;
-  private useFallback = false;
 
   constructor(logger: Logger) {
     super();
@@ -56,15 +50,14 @@ export class ChromecastDiscovery extends EventEmitter {
     this.logger.info('Starting Chromecast discovery...');
 
     try {
-      // First try the original mdns approach
-      await this.startMdnsDiscovery();
+      // Start with dnssd discovery as the primary method
+      await this.startDnssdDiscovery();
     } catch (error) {
       this.logger.warn(
-        'Primary mDNS discovery failed, trying fallback method:',
+        'dnssd discovery failed, trying manual discovery:',
         error,
       );
-      this.useFallback = true;
-      await this.startFallbackDiscovery();
+      await this.startManualDiscovery();
     }
 
     // Set a timeout to stop scanning after 30 seconds
@@ -90,68 +83,18 @@ export class ChromecastDiscovery extends EventEmitter {
       try {
         this.browser.stop();
       } catch (error) {
-        this.logger.debug('Error stopping mdns browser:', error);
-      }
-    }
-
-    if (
-      this.fallbackBrowser &&
-      typeof this.fallbackBrowser.stop === 'function'
-    ) {
-      try {
-        this.fallbackBrowser.stop();
-      } catch (error) {
-        this.logger.debug('Error stopping fallback browser:', error);
+        this.logger.debug('Error stopping browser:', error);
       }
     }
 
     this.browser = undefined;
-    this.fallbackBrowser = undefined;
   }
 
-  private async startMdnsDiscovery(): Promise<void> {
-    try {
-      const mdns = await import('mdns');
-
-      const sequence = [
-        mdns.rst.DNSServiceResolve(),
-        'DNSServiceGetAddrInfo' in mdns.dns_sd
-          ? mdns.rst.DNSServiceGetAddrInfo()
-          : mdns.rst.getaddrinfo({ families: [0] }),
-        mdns.rst.makeAddressesUnique(),
-      ];
-
-      this.browser = mdns.createBrowser(mdns.tcp('googlecast'), {
-        resolverSequence: sequence,
-      });
-
-      this.browser.on('serviceUp', (...args: unknown[]) => {
-        const service = args[0] as GenericService;
-        this.handleServiceDiscovery(service);
-      });
-
-      this.browser.on('error', (...args: unknown[]) => {
-        const error = args[0] as Error;
-        this.logger.error('mDNS browser error:', error);
-        if (!this.useFallback) {
-          this.useFallback = true;
-          this.startFallbackDiscovery();
-        }
-      });
-
-      this.browser.start();
-      this.logger.debug('mDNS discovery started successfully');
-    } catch (error) {
-      this.logger.error('Failed to start mDNS discovery:', error);
-      throw error;
-    }
-  }
-
-  private async startFallbackDiscovery(): Promise<void> {
+  private async startDnssdDiscovery(): Promise<void> {
     try {
       const dnssd = await import('dnssd');
 
-      this.fallbackBrowser = dnssd
+      this.browser = dnssd
         .Browser(dnssd.tcp('googlecast'))
         .on('serviceUp', (...args: unknown[]) => {
           const service = args[0] as GenericService;
@@ -159,15 +102,14 @@ export class ChromecastDiscovery extends EventEmitter {
         })
         .on('error', (...args: unknown[]) => {
           const error = args[0] as Error;
-          this.logger.error('Fallback browser error:', error);
+          this.logger.error('dnssd browser error:', error);
         });
 
-      this.fallbackBrowser.start();
-      this.logger.info('Fallback discovery started successfully');
+      this.browser.start();
+      this.logger.info('dnssd discovery started successfully');
     } catch (error) {
-      this.logger.error('Failed to start fallback discovery:', error);
-      // As a last resort, try manual network scanning
-      await this.startManualDiscovery();
+      this.logger.error('Failed to start dnssd discovery:', error);
+      throw error;
     }
   }
 

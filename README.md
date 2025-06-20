@@ -12,11 +12,10 @@ This plugin supports **Node.js LTS versions 18.x, 20.x, and 22.x**.
 
 The plugin uses multiple discovery methods to find Chromecast devices:
 
-1. **Primary Method**: mDNS discovery using the `mdns` library
-2. **Fallback Method**: Alternative discovery using the `dnssd` library
-3. **Manual Discovery**: Network scanning as a last resort
+1. **Primary Method**: mDNS discovery using the `dnssd` library (more reliable and Node.js 22 compatible)
+2. **Fallback Method**: Manual network scanning as a backup
 
-If the primary mDNS method fails (which can happen on certain platforms like Raspberry Pi with Node.js 22.x), the plugin automatically falls back to alternative discovery methods to ensure reliable device detection.
+If the primary dnssd method fails, the plugin automatically falls back to manual network scanning to ensure reliable device detection.
 
 ## Installation
 

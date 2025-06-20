@@ -31,10 +31,9 @@
     "homekit"
   ],
   "dependencies": {
-    "homebridge-lib": "^7.1.4",
     "castv2-client": "^1.2.0",
-    "mdns": "^2.7.2",
-    "dnssd": "^0.4.1"
+    "dnssd": "^0.4.1",
+    "homebridge-lib": "^7.1.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

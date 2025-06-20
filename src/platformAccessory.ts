@@ -15,10 +15,10 @@ export class ChromecastGoogleTVPlatformAccessory {
   private currentActiveIdentifier = 0;
 
   private chromecastStates = {
-    On: false,
+    On: false, // Start in standby/off state
     Volume: 100,
     Muted: false,
-    App: 'Chromecast',
+    App: 'Standby', // Start with standby app
   };
 
   private connected = false;
@@ -109,8 +109,21 @@ export class ChromecastGoogleTVPlatformAccessory {
    * These are sent when the user changes the state of an accessory, for example, turning on a Light bulb.
    */
   async setOn(value: CharacteristicValue) {
-    // implement your own code to turn your device on/off
-    this.platform.log.debug('Set Characteristic On ->', value);
+    const targetState = value === this.platform.Characteristic.Active.ACTIVE;
+
+    this.platform.log.info(
+      `HomeKit requested power state change -> ${
+        targetState ? 'ON' : 'OFF (STANDBY)'
+      }`,
+    );
+
+    // Note: Most Chromecast devices don't support being turned on/off programmatically
+    // The state is primarily determined by what the device is actually doing
+    // This method mainly serves to log user intentions from HomeKit
+
+    // Update internal state to reflect user's intention
+    // The actual state will be updated when we receive status updates from the Chromecast
+    this.platform.log.debug('Set Characteristic Active ->', targetState);
   }
 
   /**
@@ -127,11 +140,16 @@ export class ChromecastGoogleTVPlatformAccessory {
    * this.service.updateCharacteristic(this.platform.Characteristic.On, true)
    */
   async getOn(): Promise<CharacteristicValue> {
-    // implement your own code to check if the device is on
+    // Return the current power state: true = active/on, false = standby/off
     const isOn = this.chromecastStates.On;
 
-    this.platform.log.debug('Get Characteristic On ->', isOn);
+    this.platform.log.debug(
+      `Get Characteristic Active -> ${
+        isOn ? 'ACTIVE (ON)' : 'INACTIVE (STANDBY/OFF)'
+      }`,
+    );
 
+    // Return appropriate HomeKit Active characteristic value
     if (isOn) {
       return this.platform.Characteristic.Active.ACTIVE;
     }
@@ -247,27 +265,41 @@ export class ChromecastGoogleTVPlatformAccessory {
   updateChromecastState(status: any) {
     this.platform.log.debug('Updating Chromecast state: ', status);
 
+    // Determine if Chromecast should be considered "on" or "off"
+    // Standby mode = OFF, Active mode = ON
+    const isActive = !status.isStandBy;
+
     // Triggers and updates the HomeKit accessory with the new Chromecast state
-    if (this.chromecastStates.On !== !status.isStandBy) {
-      this.platform.log.info('Updating Chromecast state change');
+    if (this.chromecastStates.On !== isActive) {
+      this.platform.log.info(
+        `Chromecast power state changed: ${isActive ? 'ON' : 'OFF (Standby)'}`,
+      );
       this.service.updateCharacteristic(
         this.platform.Characteristic.Active,
-        !status.isStandBy,
+        isActive
+          ? this.platform.Characteristic.Active.ACTIVE
+          : this.platform.Characteristic.Active.INACTIVE,
       );
     }
 
-    this.chromecastStates.On = !status.isStandBy;
-    this.chromecastStates.Volume = status.volume.level * 100;
-    this.chromecastStates.Muted = status.volume.muted;
+    // Update internal state - standby mode means device is OFF
+    this.chromecastStates.On = isActive;
+    this.chromecastStates.Volume = status.volume?.level
+      ? status.volume.level * 100
+      : 100;
+    this.chromecastStates.Muted = status.volume?.muted || false;
 
-    // Log application info when Chromecast is active and update input source
-    if (
-      !status.isStandBy &&
-      status.applications &&
-      status.applications.length > 0
-    ) {
+    // Handle different states and update input sources accordingly
+    if (status.isStandBy) {
+      this.platform.log.info('Chromecast is in standby mode (OFF)');
+      this.chromecastStates.App = 'Standby';
+      this.updateActiveInputSource('Standby');
+    } else if (status.applications && status.applications.length > 0) {
+      // Chromecast is active and running an application
       const app = status.applications[0];
-      this.platform.log.info('Chromecast is active - Running application:');
+      this.platform.log.info(
+        'Chromecast is active (ON) - Running application:',
+      );
       this.platform.log.info(`App Name: ${app.displayName}`);
 
       this.chromecastStates.App = app.displayName;
@@ -278,19 +310,12 @@ export class ChromecastGoogleTVPlatformAccessory {
       } else {
         this.updateActiveInputSource(app.displayName);
       }
-    } else if (status.isStandBy) {
-      this.platform.log.info('Chromecast is in standby mode');
-      this.chromecastStates.App = 'Standby';
-
-      // Update input source to standby
-      this.updateActiveInputSource('Standby');
     } else {
+      // Chromecast is active but no specific application is running
       this.platform.log.info(
-        'Chromecast is active but no applications are running',
+        'Chromecast is active (ON) but no applications are running',
       );
       this.chromecastStates.App = 'Home Screen';
-
-      // Update input source to home screen
       this.updateActiveInputSource('Home Screen');
     }
   }

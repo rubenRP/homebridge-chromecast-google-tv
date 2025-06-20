@@ -4,6 +4,20 @@ This plugin will discover all chromecasts on the network and create a Television
 
 It triggers on/off when the Chromecast is activated or deactivated. Useful for automatizations
 
+## Compatibility
+
+This plugin supports **Node.js LTS versions 18.x, 20.x, and 22.x**.
+
+### Discovery Methods
+
+The plugin uses multiple discovery methods to find Chromecast devices:
+
+1. **Primary Method**: mDNS discovery using the `mdns` library
+2. **Fallback Method**: Alternative discovery using the `dnssd` library
+3. **Manual Discovery**: Network scanning as a last resort
+
+If the primary mDNS method fails (which can happen on certain platforms like Raspberry Pi with Node.js 22.x), the plugin automatically falls back to alternative discovery methods to ensure reliable device detection.
+
 ## Installation
 
 ```sh
@@ -24,6 +38,23 @@ Add this to your config.json.
 
 You can specify category for HomeKit accessory - TELEVISION, TV_STREAMING_STICK, TV_SET_TOP_BOX, APPLE_TV. This does not change the device functions, but allows you to choose how the device is displayed in the Home app.
 ![Image](https://user-images.githubusercontent.com/8211291/123853650-b295ad80-d8eb-11eb-8d75-9ff557671ec9.jpeg)
+
+## Behavior
+
+### Power State
+
+- **ON**: Chromecast is active and running applications
+- **OFF**: Chromecast is in standby mode
+
+When the Chromecast enters standby mode, it will appear as "OFF" in HomeKit. When it becomes active (playing content, showing home screen, etc.), it will appear as "ON" in HomeKit.
+
+### Input Sources
+
+The plugin automatically creates and manages input sources based on the current Chromecast state:
+
+- **Standby**: When the device is in standby mode
+- **Home Screen**: When the device is active but no specific app is running
+- **App Name**: When a specific application is running (Netflix, YouTube, etc.)
 
 ## Add to HomeKit
 

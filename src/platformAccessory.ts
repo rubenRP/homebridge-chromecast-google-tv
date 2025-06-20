@@ -1,8 +1,22 @@
 import { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import { ChromecastGoogleTVPlatform } from './platform.js';
+
 // Dynamic import for castv2-client
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let CastClient: any;
+
+// Types for cast client responses
+interface CastStatus {
+  isStandBy?: boolean;
+  volume?: {
+    level?: number;
+    muted?: boolean;
+  };
+  applications?: Array<{
+    displayName: string;
+    isIdleScreen?: boolean;
+  }>;
+}
 
 /**
  * Platform Accessory
@@ -30,15 +44,29 @@ export class ChromecastGoogleTVPlatformAccessory {
     private readonly platform: ChromecastGoogleTVPlatform,
     private readonly accessory: PlatformAccessory,
   ) {
-    // Launch Cast Client
-    if (
+    // Launch Cast Client - handle both new and legacy device formats
+    let hostAddress: string | undefined;
+
+    if (accessory.context.device.host) {
+      // New format from discovery service
+      hostAddress = accessory.context.device.host;
+    } else if (
       accessory.context.device.addresses &&
       accessory.context.device.addresses.length > 0
     ) {
-      const preferredAddress = this.getPreferredAddress(
+      // Legacy format
+      hostAddress = this.getPreferredAddress(
         accessory.context.device.addresses,
       );
-      this.castManager(preferredAddress);
+    }
+
+    if (hostAddress) {
+      this.platform.log.info(`Connecting to Chromecast at: ${hostAddress}`);
+      this.castManager(hostAddress);
+    } else {
+      this.platform.log.error(
+        'No valid host address found for Chromecast device',
+      );
     }
 
     const tvName = 'Google TV';
@@ -173,6 +201,8 @@ export class ChromecastGoogleTVPlatformAccessory {
         return;
       }
 
+      this.platform.log.info(`Attempting to connect to Chromecast at ${host}`);
+
       this.castClient.connect(host, () => {
         this.platform.log.info('Connected to Chromecast at ' + host);
         this.connected = true;
@@ -183,33 +213,79 @@ export class ChromecastGoogleTVPlatformAccessory {
           this.castClient.heartbeat &&
           this.castClient.receiver
         ) {
-          this.platform.log.info('Client is connected');
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          this.castClient.receiver.on('status', (status: any) => {
-            this.platform.log.debug('status broadcast', status);
+          this.platform.log.info('Client is connected and ready');
+
+          // Set up event listeners
+          this.castClient.receiver.on('status', (status: CastStatus) => {
+            this.platform.log.debug(
+              'Status broadcast received:',
+              JSON.stringify(status, null, 2),
+            );
             this.updateChromecastState(status);
           });
+
           this.castClient.heartbeat.on('timeout', () => {
-            this.platform.log.info('Client heartbeat timeout');
+            this.platform.log.warn(
+              'Client heartbeat timeout - connection lost',
+            );
+            this.connected = false;
           });
+
           this.castClient.heartbeat.on('pong', () => {
-            // this.platform.log.debug('Client heartbeat pong');
+            this.platform.log.debug('Client heartbeat pong received');
           });
+
           this.castClient.receiver.on('close', () => {
-            this.platform.log.info('Client receiver close');
+            this.platform.log.info(
+              'Client receiver closed - attempting reconnection',
+            );
             this.connected = false;
-            this.castManager(host);
+            setTimeout(() => {
+              this.castManager(host);
+            }, 5000);
           });
+
           this.castClient.receiver.on('error', (e: Error) => {
-            this.platform.log.info('Client receiver error', e);
+            this.platform.log.error('Client receiver error:', e);
             this.connected = false;
-            this.castManager(host);
+            setTimeout(() => {
+              this.castManager(host);
+            }, 5000);
           });
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          this.castClient.getStatus((err: any, status: any) => {
-            this.platform.log.debug('status', status);
+
+          // Get initial status
+          this.castClient.getStatus((err: Error | null, status: CastStatus) => {
+            if (err) {
+              this.platform.log.error('Error getting initial status:', err);
+              return;
+            }
+            this.platform.log.info(
+              'Initial status received:',
+              JSON.stringify(status, null, 2),
+            );
             this.updateChromecastState(status);
           });
+
+          // Set up periodic status polling to ensure we don't miss updates
+          const statusInterval = setInterval(() => {
+            if (this.connected && this.castClient) {
+              this.castClient.getStatus(
+                (err: Error | null, status: CastStatus) => {
+                  if (err) {
+                    this.platform.log.debug('Error polling status:', err);
+                    return;
+                  }
+                  this.platform.log.debug(
+                    'Polled status:',
+                    JSON.stringify(status, null, 2),
+                  );
+                  this.updateChromecastState(status);
+                },
+              );
+            } else {
+              clearInterval(statusInterval);
+            }
+          }, 10000); // Poll every 10 seconds
         }
       });
 
@@ -220,6 +296,7 @@ export class ChromecastGoogleTVPlatformAccessory {
           error.message,
         );
         this.connected = false;
+
         // Don't retry immediately on network errors to avoid spam
         if (
           error.code === 'ENETUNREACH' ||
@@ -227,17 +304,25 @@ export class ChromecastGoogleTVPlatformAccessory {
           error.code === 'ETIMEDOUT'
         ) {
           this.platform.log.warn(
-            `Network unreachable for ${host}, will retry later`,
+            `Network unreachable for ${host}, will retry in 30 seconds`,
           );
+          setTimeout(() => {
+            this.castManager(host);
+          }, 30000);
           return;
         }
-        // Retry for other errors after a delay
+
+        // Retry for other errors after a shorter delay
         setTimeout(() => {
           this.castManager(host);
-        }, 10000); // Retry after 10 seconds
+        }, 10000);
       });
     } catch (error) {
       this.platform.log.error('Failed to initialize cast client:', error);
+      // Retry after a delay
+      setTimeout(() => {
+        this.castManager(host);
+      }, 15000);
     }
   }
 
@@ -261,8 +346,7 @@ export class ChromecastGoogleTVPlatformAccessory {
     return addresses[0];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  updateChromecastState(status: any) {
+  updateChromecastState(status: CastStatus) {
     this.platform.log.debug('Updating Chromecast state: ', status);
 
     // Determine if Chromecast should be considered "on" or "off"

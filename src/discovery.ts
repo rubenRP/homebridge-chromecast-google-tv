@@ -220,13 +220,19 @@ export class ChromecastDiscovery extends EventEmitter {
         },
       };
 
+      // Add addresses array for backward compatibility
+      const deviceWithAddresses = {
+        ...device,
+        addresses: [device.host],
+      };
+
       this.logger.info(
         `Discovered Chromecast device: ${device.name} (${device.txtRecord.md}) at ${device.host}:${device.port}`,
       );
 
       // Only emit devices that are likely to be Chromecasts
       if (this.isChromecastDevice(device)) {
-        this.emit('serviceUp', device);
+        this.emit('serviceUp', deviceWithAddresses);
       }
     } catch (error) {
       this.logger.error('Error handling service discovery:', error);

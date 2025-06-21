@@ -126,6 +126,31 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
             existingAccessory.displayName,
           );
 
+          // Set accessory category based on configuration for cached accessories too
+          const categoryConfig = this.config.category || 'TELEVISION';
+          let categoryValue: number;
+
+          switch (categoryConfig) {
+            case 'TV_STREAMING_STICK':
+              categoryValue = this.api.hap.Categories.TV_STREAMING_STICK;
+              break;
+            case 'TV_SET_TOP_BOX':
+              categoryValue = this.api.hap.Categories.TV_SET_TOP_BOX;
+              break;
+            case 'APPLE_TV':
+              categoryValue = this.api.hap.Categories.APPLE_TV;
+              break;
+            case 'TELEVISION':
+            default:
+              categoryValue = this.api.hap.Categories.TELEVISION;
+              break;
+          }
+
+          existingAccessory.category = categoryValue;
+          this.log.info(
+            `Setting existing accessory category to: ${categoryConfig} (${categoryValue})`,
+          );
+
           // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
           existingAccessory.context.device = device;
           this.api.updatePlatformAccessories([existingAccessory]);
@@ -139,6 +164,31 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
           this.log.info('Adding new accessory:', device.name);
 
           const accessory = new this.api.platformAccessory(device.name, uuid);
+
+          // Set accessory category based on configuration BEFORE registering
+          const categoryConfig = this.config.category || 'TELEVISION';
+          let categoryValue: number;
+
+          switch (categoryConfig) {
+            case 'TV_STREAMING_STICK':
+              categoryValue = this.api.hap.Categories.TV_STREAMING_STICK;
+              break;
+            case 'TV_SET_TOP_BOX':
+              categoryValue = this.api.hap.Categories.TV_SET_TOP_BOX;
+              break;
+            case 'APPLE_TV':
+              categoryValue = this.api.hap.Categories.APPLE_TV;
+              break;
+            case 'TELEVISION':
+            default:
+              categoryValue = this.api.hap.Categories.TELEVISION;
+              break;
+          }
+
+          accessory.category = categoryValue;
+          this.log.info(
+            `Setting accessory category to: ${categoryConfig} (${categoryValue})`,
+          );
 
           // store a copy of the device object in the `accessory.context`
           // the `context` property can be used to store any data about the accessory you may need

@@ -128,6 +128,20 @@ export class ChromecastGoogleTVPlatformAccessory {
       .getCharacteristic(this.platform.Characteristic.Active)
       .onGet(this.getOn.bind(this)) // GET - bind to the `getOn` method below
       .onSet(this.setOn.bind(this)); // SET - bind to the `setOn` method below
+
+    // Set initial state - Chromecast starts in standby/off state
+    this.service.setCharacteristic(
+      this.platform.Characteristic.Active,
+      this.chromecastStates.On
+        ? this.platform.Characteristic.Active.ACTIVE
+        : this.platform.Characteristic.Active.INACTIVE,
+    );
+
+    this.platform.log.info(
+      `Initial TV power state set to: ${
+        this.chromecastStates.On ? 'ON' : 'OFF (Standby)'
+      }`,
+    );
   }
 
   /**
@@ -348,13 +362,45 @@ export class ChromecastGoogleTVPlatformAccessory {
     this.platform.log.debug('Updating Chromecast state: ', status);
 
     // Determine if Chromecast should be considered "on" or "off"
-    // Standby mode = OFF, Active mode = ON
-    const isActive = !status.isStandBy;
+    // Device should only be considered "ON" when it's actively playing content
+    // If it's in standby OR just showing home screen without active content, it should be "OFF"
+    let isActive = false;
+
+    if (status.isStandBy) {
+      // Definitely OFF when in standby
+      isActive = false;
+      this.platform.log.debug('Chromecast is in standby mode - marking as OFF');
+    } else if (status.applications && status.applications.length > 0) {
+      // Check if there are active applications
+      const app = status.applications[0];
+      // Consider "ON" only if there's an actual app running (not just idle screen)
+      if (app.isIdleScreen) {
+        // Idle/home screen should be considered OFF
+        isActive = false;
+        this.platform.log.debug(
+          'Chromecast showing idle screen - marking as OFF',
+        );
+      } else {
+        // Actually running an app - consider this ON
+        isActive = true;
+        this.platform.log.debug(
+          `Chromecast running ${app.displayName} - marking as ON`,
+        );
+      }
+    } else {
+      // No applications running, consider OFF
+      isActive = false;
+      this.platform.log.debug(
+        'Chromecast has no applications running - marking as OFF',
+      );
+    }
 
     // Triggers and updates the HomeKit accessory with the new Chromecast state
     if (this.chromecastStates.On !== isActive) {
       this.platform.log.info(
-        `Chromecast power state changed: ${isActive ? 'ON' : 'OFF (Standby)'}`,
+        `Chromecast power state changed: ${
+          isActive ? 'ON (Playing Content)' : 'OFF (Standby/Idle)'
+        }`,
       );
       this.service.updateCharacteristic(
         this.platform.Characteristic.Active,
@@ -364,7 +410,7 @@ export class ChromecastGoogleTVPlatformAccessory {
       );
     }
 
-    // Update internal state - standby mode means device is OFF
+    // Update internal state
     this.chromecastStates.On = isActive;
     this.chromecastStates.Volume = status.volume?.level
       ? status.volume.level * 100
@@ -373,29 +419,29 @@ export class ChromecastGoogleTVPlatformAccessory {
 
     // Handle different states and update input sources accordingly
     if (status.isStandBy) {
-      this.platform.log.info('Chromecast is in standby mode (OFF)');
+      this.platform.log.info('Chromecast is in standby mode');
       this.chromecastStates.App = 'Standby';
       this.updateActiveInputSource('Standby');
     } else if (status.applications && status.applications.length > 0) {
-      // Chromecast is active and running an application
+      // Chromecast has applications - check if actively playing content
       const app = status.applications[0];
-      this.platform.log.info(
-        'Chromecast is active (ON) - Running application:',
-      );
-      this.platform.log.info(`App Name: ${app.displayName}`);
 
       this.chromecastStates.App = app.displayName;
 
       // Update input source to show the current app
       if (app.isIdleScreen) {
+        this.platform.log.info('Chromecast showing home screen/idle');
         this.updateActiveInputSource('Home Screen');
       } else {
+        this.platform.log.info(
+          `Chromecast playing content: ${app.displayName}`,
+        );
         this.updateActiveInputSource(app.displayName);
       }
     } else {
-      // Chromecast is active but no specific application is running
+      // Chromecast is on but no specific application is running
       this.platform.log.info(
-        'Chromecast is active (ON) but no applications are running',
+        'Chromecast is on but no applications are running',
       );
       this.chromecastStates.App = 'Home Screen';
       this.updateActiveInputSource('Home Screen');

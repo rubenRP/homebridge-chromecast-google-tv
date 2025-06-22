@@ -6,4 +6,4 @@ export const PLATFORM_NAME = 'HomebridgeChromecastGoogleTV';
 /**
  * This must match the name of your plugin as defined the package.json
  */
-export const PLUGIN_NAME = 'homebridge-chromecast-google-tv';
+export const PLUGIN_NAME = '@rubenrp/homebridge-chromecast-google-tv';

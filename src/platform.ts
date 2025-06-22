@@ -26,6 +26,14 @@ interface ChromecastDevice {
   };
 }
 
+interface ChromecastPlatformConfig extends PlatformConfig {
+  category?:
+    | 'TELEVISION'
+    | 'TV_STREAMING_STICK'
+    | 'TV_SET_TOP_BOX'
+    | 'APPLE_TV';
+}
+
 /**
  * HomebridgePlatform
  * This class is the main constructor for your plugin, this is where you should
@@ -44,7 +52,7 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
 
   constructor(
     public readonly log: Logger,
-    public readonly config: PlatformConfig,
+    public readonly config: ChromecastPlatformConfig,
     public readonly api: API,
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
@@ -127,28 +135,12 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
           );
 
           // Set accessory category based on configuration for cached accessories too
-          const categoryConfig = this.config.category || 'TELEVISION';
-          let categoryValue: number;
-
-          switch (categoryConfig) {
-            case 'TV_STREAMING_STICK':
-              categoryValue = this.api.hap.Categories.TV_STREAMING_STICK;
-              break;
-            case 'TV_SET_TOP_BOX':
-              categoryValue = this.api.hap.Categories.TV_SET_TOP_BOX;
-              break;
-            case 'APPLE_TV':
-              categoryValue = this.api.hap.Categories.APPLE_TV;
-              break;
-            case 'TELEVISION':
-            default:
-              categoryValue = this.api.hap.Categories.TELEVISION;
-              break;
-          }
-
+          const categoryValue = this.getCategoryFromConfig();
           existingAccessory.category = categoryValue;
           this.log.info(
-            `Setting existing accessory category to: ${categoryConfig} (${categoryValue})`,
+            `Setting existing accessory category to: ${
+              this.config.category || 'TELEVISION'
+            } (${categoryValue})`,
           );
 
           // if you need to update the accessory.context then you should run `api.updatePlatformAccessories`. eg.:
@@ -163,31 +155,24 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
         } else {
           this.log.info('Adding new accessory:', device.name);
 
-          const accessory = new this.api.platformAccessory(device.name, uuid);
+          // Get category value BEFORE creating accessory
+          const categoryValue = this.getCategoryFromConfig();
 
-          // Set accessory category based on configuration BEFORE registering
-          const categoryConfig = this.config.category || 'TELEVISION';
-          let categoryValue: number;
+          const accessory = new this.api.platformAccessory(
+            device.name,
+            uuid,
+            categoryValue,
+          );
 
-          switch (categoryConfig) {
-            case 'TV_STREAMING_STICK':
-              categoryValue = this.api.hap.Categories.TV_STREAMING_STICK;
-              break;
-            case 'TV_SET_TOP_BOX':
-              categoryValue = this.api.hap.Categories.TV_SET_TOP_BOX;
-              break;
-            case 'APPLE_TV':
-              categoryValue = this.api.hap.Categories.APPLE_TV;
-              break;
-            case 'TELEVISION':
-            default:
-              categoryValue = this.api.hap.Categories.TELEVISION;
-              break;
-          }
-
-          accessory.category = categoryValue;
           this.log.info(
-            `Setting accessory category to: ${categoryConfig} (${categoryValue})`,
+            `Setting accessory category to: ${
+              this.config.category || 'TELEVISION'
+            } (${categoryValue})`,
+          );
+          this.log.info(
+            `Setting accessory category to: ${
+              this.config.category || 'TELEVISION'
+            } (${categoryValue})`,
           );
 
           // store a copy of the device object in the `accessory.context`
@@ -210,5 +195,33 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
 
     // Start discovery
     this.discovery.start();
+  }
+
+  /**
+   * Get the HomeKit category value based on configuration
+   */
+  private getCategoryFromConfig(): number {
+    const categoryConfig = this.config.category || 'TELEVISION';
+    this.log.info(`Getting category for config value: ${categoryConfig}`);
+
+    let categoryValue: number;
+    switch (categoryConfig) {
+      case 'TV_STREAMING_STICK':
+        categoryValue = this.api.hap.Categories.TV_STREAMING_STICK;
+        break;
+      case 'TV_SET_TOP_BOX':
+        categoryValue = this.api.hap.Categories.TV_SET_TOP_BOX;
+        break;
+      case 'APPLE_TV':
+        categoryValue = this.api.hap.Categories.APPLE_TV;
+        break;
+      case 'TELEVISION':
+      default:
+        categoryValue = this.api.hap.Categories.TELEVISION;
+        break;
+    }
+
+    this.log.info(`Mapped to category value: ${categoryValue}`);
+    return categoryValue;
   }
 }

@@ -206,19 +206,19 @@ export class ChromecastGoogleTVPlatform implements DynamicPlatformPlugin {
 
     let categoryValue: number;
     switch (categoryConfig) {
-      case 'TV_STREAMING_STICK':
-        categoryValue = this.api.hap.Categories.TV_STREAMING_STICK;
-        break;
-      case 'TV_SET_TOP_BOX':
-        categoryValue = this.api.hap.Categories.TV_SET_TOP_BOX;
-        break;
-      case 'APPLE_TV':
-        categoryValue = this.api.hap.Categories.APPLE_TV;
-        break;
-      case 'TELEVISION':
-      default:
-        categoryValue = this.api.hap.Categories.TELEVISION;
-        break;
+    case 'TV_STREAMING_STICK':
+      categoryValue = this.api.hap.Categories.TV_STREAMING_STICK;
+      break;
+    case 'TV_SET_TOP_BOX':
+      categoryValue = this.api.hap.Categories.TV_SET_TOP_BOX;
+      break;
+    case 'APPLE_TV':
+      categoryValue = this.api.hap.Categories.APPLE_TV;
+      break;
+    case 'TELEVISION':
+    default:
+      categoryValue = this.api.hap.Categories.TELEVISION;
+      break;
     }
 
     this.log.info(`Mapped to category value: ${categoryValue}`);

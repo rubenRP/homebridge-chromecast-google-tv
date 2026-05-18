@@ -6,7 +6,14 @@ It triggers on/off when the Chromecast is activated or deactivated. Useful for a
 
 ## Compatibility
 
-This plugin supports **Node.js LTS versions 18.x, 20.x, and 22.x**.
+- **Homebridge**: 1.6+ and 2.0+
+- **Node.js**: 18.x / 20.x (Homebridge 1.x) and 22.x / 24.x (Homebridge 2.0)
+
+If you upgraded to Homebridge 2.0 and the plugin disappeared, reinstall it — the package was temporarily removed from npm and has been republished:
+
+```sh
+npm install -g homebridge-chromecast-google-tv@latest
+```
 
 ### Discovery Methods
 
